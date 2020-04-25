@@ -66,20 +66,11 @@ void setup()
 
   //Print MAC address
   Serial.print(F("MAC address: "));
-  for (int i = (sizeof(mac)-1); i>=0; i--)
-  {
-    Serial.print(mac[i],HEX);
-    Serial.print(":");
-  }
-  Serial.println();
+  Serial.println(WiFi.macAddress());
 
   // MQTT client ID is constructed from the MAC address in order to be unique. The unique MQTT client ID is needed in order to avoid issues with Mosquitto broker
   String clientIDStr = "Lolin_D1_Mini_";
-
-  for (int i = (sizeof(mac)-1); i>=0; i--)
-  {
-    clientIDStr.concat(mac[i]);
-  }
+  clientIDStr.concat(WiFi.macAddress());
 
   Serial.print(F("MQTT client ID: "));
   Serial.println(clientIDStr);
@@ -131,13 +122,12 @@ void loop()
 
       mqttConnectionFails +=1; // If MQTT connection is disconnected for some reason this variable is increment by 1
 
-      // Wifi connection to be disconnected and initialized again if MQTT connection has been disconnected 10 times
-      if (mqttConnectionFails >= 10)
+      // Device to be reset if MQTT connection has been disconnected 5 times
+      if (mqttConnectionFails >= 5)
       {
-        Serial.println(F("Wifi connection to be disconnected and initialized again!"));
+        Serial.println(F("Device to be reset because MQTT connection has been disconnected 5 times"));
         WiFi.disconnect();
-        mqttConnectionFails = 0;
-        startWiFi();
+        ESP.restart();
       }
     }
 
@@ -166,7 +156,8 @@ void startWiFi() //ESP8266 Wifi
   }
   Serial.println();
 
-  Serial.println(F("Connected to WiFi"));
+  Serial.print(F("Connected to WiFi network: "));
+  Serial.println(ssid);
   Serial.print(F("IP address: "));
   Serial.println(WiFi.localIP());
 }

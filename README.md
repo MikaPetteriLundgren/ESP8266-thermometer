@@ -18,7 +18,7 @@ MQTT callback functionality is not used in the sketch
 
 The sketch needs ESP8266-thermometer.h header file in order to work. The header file includes settings for the sketch.
 
-If the MQTT connection has been disconnected, reconnection will take place. If the reconnection fails 10 times, Wifi connection is disconnected and initialized again.
+If the MQTT connection has been disconnected, reconnection will take place. If the reconnection fails 5 times, device is restarted.
 
 It's possible to print amount of free RAM memory via serial port by uncommenting `#define RAM_DEBUG` line
 It's possible to print more debug information via serial port by uncommenting `#define DEBUG` line
