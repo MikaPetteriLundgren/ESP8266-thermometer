@@ -171,7 +171,7 @@ String createMQTTPayload(int idx) //Create MQTT message payload. Returns created
 
   // Add values in the JSON document
   doc["command"] = "udevice";
-  doc["idx"] = 1481;
+  doc["idx"] = temperatureSensorIDX;
   doc["nvalue"] = 0;
   doc["svalue"] = temperatureString;
 
