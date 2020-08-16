@@ -160,6 +160,9 @@ void startWiFi() //ESP8266 Wifi
   Serial.println(ssid);
   Serial.print(F("IP address: "));
   Serial.println(WiFi.localIP());
+  Serial.print(F("RSSI: "));
+  Serial.print(WiFi.RSSI());
+  Serial.println(F("dBm"));
 }
 
 String createMQTTPayload(int idx) //Create MQTT message payload. Returns created payload as a String.
