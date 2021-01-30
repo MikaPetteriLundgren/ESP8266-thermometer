@@ -78,7 +78,9 @@ void setup()
 
   //MQTT connection is established and topic subscribed for the callback function
   mqttClient.connect(clientID) ? Serial.println(F("MQTT client connected")) : Serial.println(F("MQTT client connection failed...")); //condition ? valueIfTrue : valueIfFalse
-  mqttClient.subscribe(subscribeTopic) ? Serial.println(F("MQTT topic subscribed succesfully")) : Serial.println(F("MQTT topic subscription failed...")); //condition ? valueIfTrue : valueIfFalse
+  Serial.print(F("MQTT topic "));
+  Serial.print(subscribeTopic);
+  mqttClient.subscribe(subscribeTopic) ? Serial.println(F(" subscribed succesfully")) : Serial.println(F(" subscription failed...")); //condition ? valueIfTrue : valueIfFalse
 
   // Timers are initialised
   Alarm.timerRepeat(tempMeasInterval, tempFunction);
