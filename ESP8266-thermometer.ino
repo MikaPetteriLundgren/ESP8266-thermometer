@@ -25,6 +25,7 @@ int status = WL_IDLE_STATUS; // Wifi status
 IPAddress ip; // IP address
 WiFiClient wifiClient; // Initialize Wifi Client
 byte mac[6]; // MAC address of Wifi module
+byte WiFiTimeout = 30; // Wi-Fi connection timeout in seconds. System to be rebooted if the timeout expires.
 
 // OneWire and Dallas temperature sensors library are initialized
 #define ONE_WIRE_BUS 2 // OneWire data wire is plugged into GPIO 2 of the ESP8266. Parasite powering scheme is used.
@@ -42,23 +43,25 @@ void mqttCallback(char* topic, byte* payload, unsigned int length);
 //MQTT initialization
 PubSubClient mqttClient(MQTT_SERVER, 1883, mqttCallback, wifiClient); // MQTT_SERVER constructor parameter is defined in the header file
 char clientID[50];
-//char topic[50];
 char msg[80];
 char topic[] = MQTT_TOPIC; // Topic for outgoing MQTT messages to the Domoticz. The MQTT_TOPIC is defined in the header file
 char subscribeTopic[ ] = MQTT_SUBSCRIBE_TOPIC; // This topic will be listened for incoming MQTT messages from the Domoticz. The MQTT_SUBSCRIBE_TOPIC is defined in the header file
 int mqttConnectionFails = 0; // If MQTT connection is disconnected for some reason, this variable is increment by 1
 
 //MQTT variables
-const int temperatureSensorIDX = 1481; // IDX of the temperature sensor in Domoticz
+const int temperatureSensorIDX = 8888; // IDX of the temperature sensor in Domoticz
 
 //#define DEBUG // Comment this line out if there is no need to print debug information via serial port
 //#define RAM_DEBUG // Comment this line out if there is no need to print RAM debug information via serial port
+//#define WIFI_DEBUG // Comment this line out if there is no need to print WIFI debug information via serial port
 
 
 void setup()
 {
   Serial.begin(115200); // Start serial port
   //while (!Serial) ; // Needed with Arduino Leonardo only
+
+  Serial.println(F("\n---------------- Setup started ----------------\n"));
 
   // Start Wifi
   startWiFi();
@@ -72,7 +75,7 @@ void setup()
   String clientIDStr = "Lolin_D1_Mini_";
   clientIDStr.concat(WiFi.macAddress());
 
-  Serial.print(F("MQTT client ID: "));
+  Serial.print(F("\nMQTT client ID: "));
   Serial.println(clientIDStr);
   clientIDStr.toCharArray(clientID, clientIDStr.length()+1);
 
@@ -84,6 +87,9 @@ void setup()
 
   // Timers are initialised
   Alarm.timerRepeat(tempMeasInterval, tempFunction);
+  Serial.print(F("\nTemperature measurement is done every "));
+  Serial.print(tempMeasInterval / 3600); //tempMeasInterveal is defined in seconds
+  Serial.println(F("h"));
 
   // Start the DallasTemperature library and perform the first measurement and send it to Domoticz
   sensors.begin();
@@ -106,7 +112,7 @@ void setup()
     Serial.println(F("No DS18B20 sensor found...."));
   }
 
-  Serial.println(F("Setup completed succesfully!\n"));
+  Serial.println(F("---------------- Setup completed succesfully ----------------\n"));
 }
 
 
@@ -146,18 +152,41 @@ void loop()
 
 void startWiFi() //ESP8266 Wifi
 {
+  Serial.printf("Wi-Fi set to station mode (WIFI_STA) %s\n", WiFi.mode(WIFI_STA) ? "" : "failed!"); // Set ESP8266 to a client mode
   WiFi.begin(ssid, pass);
+  byte timeoutCounter = 0;
 
-  Serial.print(F("Connecting to Wi-Fi network "));
-  Serial.println(ssid);
+  Serial.print("Wi-Fi connection timeout set to ");
+  Serial.print(WiFiTimeout);
+  Serial.println("s");
+  Serial.print("Connecting to Wi-Fi network ");
+  Serial.print(ssid);
 
   while (WiFi.status() != WL_CONNECTED)
   {
     delay(500);
     Serial.print(".");
-  }
-  Serial.println();
 
+    if (timeoutCounter >= WiFiTimeout * 2)
+    {
+      printWifiState(WiFi.status());
+      Serial.println("\nWi-fi connection timeout");
+      Serial.println("System to be restarted in 2s...");
+      delay(2000);
+      ESP.restart();
+    }
+    timeoutCounter += 1;
+  }
+
+  // Wi-Fi debug info is printed out if WIFI_DEBUG is uncommented
+  #if defined WIFI_DEBUG
+    Serial.println(F("\nWi-Fi diagnostics info:"));
+    Serial.setDebugOutput(true); //enable debug via serial port
+    WiFi.printDiag(Serial);
+    Serial.setDebugOutput(false); //disable debug via serial port
+  #endif
+
+  Serial.println();
   Serial.print(F("Connected to WiFi network: "));
   Serial.println(ssid);
   Serial.print(F("IP address: "));
@@ -311,4 +340,44 @@ void printAddress(DeviceAddress deviceAddress)
     if (deviceAddress[i] < 16) Serial.print("0");
     Serial.print(deviceAddress[i], HEX);
   }
+}
+
+void printWifiState(int WifiStatus) // Prints Wi-Fi client status in human readable format. The statuses can be found via the following link: https://arduino-esp8266.readthedocs.io/en/latest/esp8266wifi/readme.html
+{
+
+  Serial.print(F("\nWi-Fi status: "));
+  Serial.print(WifiStatus);
+  
+  switch (WifiStatus)
+  {
+   case 0:
+     Serial.println(F(" - Wi-Fi client is in process of changing states")); 
+     break;
+   case 1:
+     Serial.println(F(" - Wi-Fi network not found")); 
+     break;
+   case 3:
+     Serial.println(F(" - Connected")); 
+     break;
+   case 4:
+     Serial.println(F(" - Connection failed")); 
+     break;
+   case 6:
+     Serial.println(F(" - Password is incorrect")); 
+     break;
+   case 7:
+     Serial.println(F(" - Module is not configured in station mode")); 
+     break;   
+   default:
+     Serial.println(F(" - Unknown Wi-Fi status code received")); 
+     break;
+  }  
+
+  // Wi-Fi debug info is printed out if WIFI_DEBUG is uncommented
+  #if defined WIFI_DEBUG
+    Serial.println(F("\nWi-Fi diagnostics info:"));
+    Serial.setDebugOutput(true); //enable debug via serial port
+    WiFi.printDiag(Serial);
+  #endif
+
 }
