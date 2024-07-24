@@ -75,9 +75,13 @@ void setup()
   String clientIDStr = "Lolin_D1_Mini_";
   clientIDStr.concat(WiFi.macAddress());
 
-  Serial.print(F("\nMQTT client ID: "));
+  Serial.print(F("\nIP address of the MQTT server: "));
+  Serial.println(MQTT_SERVER);
+  Serial.print(F("MQTT client ID: "));
   Serial.println(clientIDStr);
   clientIDStr.toCharArray(clientID, clientIDStr.length()+1);
+  Serial.print(F("IDX of the sensor: "));
+  Serial.println(temperatureSensorIDX);
 
   //MQTT connection is established and topic subscribed for the callback function
   mqttClient.connect(clientID) ? Serial.println(F("MQTT client connected")) : Serial.println(F("MQTT client connection failed...")); //condition ? valueIfTrue : valueIfFalse
